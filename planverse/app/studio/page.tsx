@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import FurniturePanel from "@/components/panels/FurniturePanel";
 import AIPanel from "@/components/panels/AIPanel";
 import StyleSelector from "@/components/StyleSelector";
-import type { FurnitureItem, LayoutStyle, AIAnalysis } from "@/types";
+import type { FurnitureItem, LayoutStyle } from "@/types";
+import type { StudioCanvasHandle } from "@/components/canvas/StudioCanvas";
 
 // Dynamically import StudioCanvas to avoid SSR issues with Konva
 const StudioCanvas = dynamic(() => import("@/components/canvas/StudioCanvas"), {
@@ -15,17 +16,17 @@ const StudioCanvas = dynamic(() => import("@/components/canvas/StudioCanvas"), {
     <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
       <div className="text-center text-gray-400">
         <div className="text-4xl mb-2 animate-pulse">🏠</div>
-        <p className="text-sm">Loading canvas...</p>
+        <p className="text-sm">กำลังโหลด Canvas…</p>
       </div>
     </div>
   ),
 });
 
 export default function StudioPage() {
+  const canvasRef = useRef<StudioCanvasHandle | null>(null);
+
   const [furniture, setFurniture] = useState<FurnitureItem[]>([]);
   const [style, setStyle] = useState<LayoutStyle>("modern");
-  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [roomWidth] = useState(500);
   const [roomHeight] = useState(400);
 
@@ -37,45 +38,11 @@ export default function StudioPage() {
     setFurniture(updated);
   }, []);
 
-  const handleCanvasExport = useCallback(
-    async (dataUrl: string) => {
-      setIsAnalyzing(true);
-      try {
-        const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64: base64,
-            style,
-            roomDimensions: { width: roomWidth, height: roomHeight },
-          }),
-        });
-
-        const data = await res.json();
-        if (data.success && data.analysis) {
-          setAnalysis(data.analysis);
-        } else {
-          alert(data.error || "Analysis failed");
-        }
-      } catch (err) {
-        alert("Failed to analyze layout");
-      } finally {
-        setIsAnalyzing(false);
-      }
-    },
-    [style, roomWidth, roomHeight]
+  /** Called by AIPanel to capture the current canvas as a PNG dataUrl */
+  const getCanvasSnapshot = useCallback(
+    () => canvasRef.current?.getDataUrl() ?? "",
+    []
   );
-
-  const handleAnalyzeClick = () => {
-    // Trigger canvas export from the AIPanel button
-    const exportBtn = document.querySelector(
-      "[data-canvas-export]"
-    ) as HTMLButtonElement;
-    if (exportBtn) {
-      exportBtn.click();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -134,22 +101,22 @@ export default function StudioPage() {
           </div>
 
           <StudioCanvas
+            ref={canvasRef}
             furniture={furniture}
             roomWidth={roomWidth}
             roomHeight={roomHeight}
             onFurnitureChange={handleFurnitureChange}
-            onCanvasExport={handleCanvasExport}
           />
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-sm text-blue-700">
-              <strong>Tip:</strong> <strong>Drag</strong> furniture from the
-              left panel onto the canvas, or <strong>click</strong> to add at
-              default position. Select an item and press{" "}
+              <strong>เคล็ดลับ:</strong> ลากเฟอร์นิเจอร์จากแถบซ้ายมาวางบน
+              Canvas หรือคลิกเพื่อเพิ่มที่ตำแหน่งเริ่มต้น · เลือกแล้วกด{" "}
               <kbd className="px-1 py-0.5 bg-white border border-blue-200 rounded text-blue-600 font-mono text-xs">
                 Del
               </kbd>{" "}
-              to remove it. Then click <strong>Export for AI Analysis</strong>.
+              เพื่อลบ · ใช้แถบขวาเพื่ออัปโหลดรูปหรือดึงภาพ Canvas
+              มาวิเคราะห์ด้วย AI
             </p>
           </div>
         </main>
@@ -158,9 +125,9 @@ export default function StudioPage() {
         <aside className="w-64 bg-white border-l border-gray-200 overflow-y-auto p-3 space-y-3 shrink-0">
           <StyleSelector value={style} onChange={setStyle} />
           <AIPanel
-            analysis={analysis}
-            isLoading={isAnalyzing}
-            onAnalyze={handleAnalyzeClick}
+            style={style}
+            roomDimensions={{ width: roomWidth, height: roomHeight }}
+            onRequestSnapshot={getCanvasSnapshot}
           />
         </aside>
       </div>

@@ -1,17 +1,28 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Stage, Layer, Rect, Line, Group, Text } from "react-konva";
 import FurnitureItem from "./FurnitureItem";
 import type { FurnitureItem as FurnitureItemType, FurnitureType } from "@/types";
 import { getFurnitureByType } from "@/lib/furniture-data";
+
+export interface StudioCanvasHandle {
+  /** Returns a data URL (PNG) of the current canvas at 2× pixel ratio */
+  getDataUrl: () => string;
+}
 
 interface StudioCanvasProps {
   furniture: FurnitureItemType[];
   roomWidth: number;
   roomHeight: number;
   onFurnitureChange: (furniture: FurnitureItemType[]) => void;
-  onCanvasExport?: (dataUrl: string) => void;
 }
 
 const CANVAS_WIDTH = 800;
@@ -20,14 +31,14 @@ const GRID_SIZE = 20;
 const WALL = 10; // wall thickness in px
 const CORNER_LEN = 16; // corner mark length
 
-export default function StudioCanvas({
-  furniture,
-  roomWidth,
-  roomHeight,
-  onFurnitureChange,
-  onCanvasExport,
-}: StudioCanvasProps) {
+const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(
+  function StudioCanvas({ furniture, roomWidth, roomHeight, onFurnitureChange }, ref) {
   const stageRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    getDataUrl: () =>
+      stageRef.current?.toDataURL({ pixelRatio: 2, mimeType: "image/png" }) ?? "",
+  }));
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const scale = Math.min(
@@ -128,14 +139,6 @@ export default function StudioCanvas({
     },
     [furniture, onFurnitureChange, offsetX, offsetY, scale, roomWidth, roomHeight]
   );
-
-  // ── Export ─────────────────────────────────────────────────────────────
-  const handleExport = () => {
-    if (stageRef.current && onCanvasExport) {
-      const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
-      onCanvasExport(dataUrl);
-    }
-  };
 
   // ── Grid lines (clipped to room interior) ─────────────────────────────
   const gridLines = [];
@@ -306,30 +309,22 @@ export default function StudioCanvas({
       </div>
 
       {/* Toolbar row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2 min-h-[28px]">
         {selectedId ? (
           <span className="text-xs text-gray-400 flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-500 font-mono">
+            <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-500 font-mono text-[11px]">
               Del
             </kbd>
-            to remove selected item
+            ลบรายการที่เลือก
           </span>
         ) : (
           <span className="text-xs text-gray-400">
-            Click an item to select · drag from panel or canvas
+            คลิกรายการเพื่อเลือก · ลากจากแผงซ้าย
           </span>
-        )}
-
-        {onCanvasExport && (
-          <button
-            data-canvas-export
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            📸 Export for AI Analysis
-          </button>
         )}
       </div>
     </div>
   );
-}
+});
+
+export default StudioCanvas;
