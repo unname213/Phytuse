@@ -8,6 +8,7 @@ import AIPanel from "@/components/panels/AIPanel";
 import StyleSelector from "@/components/StyleSelector";
 import type { FurnitureItem, LayoutStyle } from "@/types";
 import type { StudioCanvasHandle } from "@/components/canvas/StudioCanvas";
+import { buildTemplateItems, STYLE_THEMES } from "@/lib/style-templates";
 
 // Dynamically import StudioCanvas to avoid SSR issues with Konva
 const StudioCanvas = dynamic(() => import("@/components/canvas/StudioCanvas"), {
@@ -30,6 +31,20 @@ export default function StudioPage() {
   const [roomWidth] = useState(500);
   const [roomHeight] = useState(400);
 
+  // ── Style change: keep furniture, just update style label ─────────────────
+  const handleStyleChange = useCallback((newStyle: LayoutStyle) => {
+    setStyle(newStyle);
+  }, []);
+
+  // ── Apply template: replace furniture with preset layout ──────────────────
+  const handleApplyTemplate = useCallback(
+    (templateStyle: LayoutStyle) => {
+      const items = buildTemplateItems(templateStyle, roomWidth, roomHeight);
+      setFurniture(items);
+    },
+    [roomWidth, roomHeight]
+  );
+
   const handleAddFurniture = useCallback((item: FurnitureItem) => {
     setFurniture((prev) => [...prev, item]);
   }, []);
@@ -43,6 +58,8 @@ export default function StudioPage() {
     () => canvasRef.current?.getDataUrl() ?? "",
     []
   );
+
+  const theme = STYLE_THEMES[style];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,6 +82,20 @@ export default function StudioPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Style indicator */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+            {theme.palette.slice(0, 4).map((hex, i) => (
+              <div
+                key={i}
+                className="w-3 h-3 rounded-full ring-1 ring-white"
+                style={{ backgroundColor: hex }}
+              />
+            ))}
+            <span className="text-xs font-medium text-amber-700 capitalize ml-0.5">
+              {style}
+            </span>
+          </div>
+
           <span className="text-sm text-gray-500">
             {furniture.length} item{furniture.length !== 1 ? "s" : ""} on canvas
           </span>
@@ -106,6 +137,8 @@ export default function StudioPage() {
             roomWidth={roomWidth}
             roomHeight={roomHeight}
             onFurnitureChange={handleFurnitureChange}
+            wallColor={theme.wallColor}
+            floorColor={theme.floorColor}
           />
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
@@ -115,15 +148,18 @@ export default function StudioPage() {
               <kbd className="px-1 py-0.5 bg-white border border-blue-200 rounded text-blue-600 font-mono text-xs">
                 Del
               </kbd>{" "}
-              เพื่อลบ · ใช้แถบขวาเพื่ออัปโหลดรูปหรือดึงภาพ Canvas
-              มาวิเคราะห์ด้วย AI
+              เพื่อลบ · กด ✨ Apply Template เพื่อวางเฟอร์นิเจอร์ตามสไตล์
             </p>
           </div>
         </main>
 
         {/* Right Sidebar */}
         <aside className="w-64 bg-white border-l border-gray-200 overflow-y-auto p-3 space-y-3 shrink-0">
-          <StyleSelector value={style} onChange={setStyle} />
+          <StyleSelector
+            value={style}
+            onChange={handleStyleChange}
+            onApplyTemplate={handleApplyTemplate}
+          />
           <AIPanel
             style={style}
             roomDimensions={{ width: roomWidth, height: roomHeight }}

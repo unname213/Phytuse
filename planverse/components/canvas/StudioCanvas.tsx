@@ -23,6 +23,8 @@ interface StudioCanvasProps {
   roomWidth: number;
   roomHeight: number;
   onFurnitureChange: (furniture: FurnitureItemType[]) => void;
+  wallColor?: string;
+  floorColor?: string;
 }
 
 const CANVAS_WIDTH = 800;
@@ -32,7 +34,7 @@ const WALL = 10; // wall thickness in px
 const CORNER_LEN = 16; // corner mark length
 
 const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(
-  function StudioCanvas({ furniture, roomWidth, roomHeight, onFurnitureChange }, ref) {
+  function StudioCanvas({ furniture, roomWidth, roomHeight, onFurnitureChange, wallColor = "#374151", floorColor = "#FAFAF8" }, ref) {
   const stageRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
@@ -206,7 +208,7 @@ const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(
               y={offsetY - WALL}
               width={scaledRoomW + WALL * 2}
               height={scaledRoomH + WALL * 2}
-              fill="#374151"
+              fill={wallColor}
               cornerRadius={2}
               shadowBlur={8}
               shadowColor="rgba(0,0,0,0.25)"
@@ -221,7 +223,7 @@ const StudioCanvas = forwardRef<StudioCanvasHandle, StudioCanvasProps>(
               y={offsetY}
               width={scaledRoomW}
               height={scaledRoomH}
-              fill="#FAFAF8"
+              fill={floorColor}
               listening={true}
             />
 
