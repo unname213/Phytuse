@@ -3,9 +3,17 @@
 import { Group, Rect, Text } from "react-konva";
 import type { FurnitureItem as FurnitureItemType } from "@/types";
 
+interface StageBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 interface FurnitureItemProps {
   item: FurnitureItemType;
   isSelected: boolean;
+  stageBounds: StageBounds;
   onSelect: (id: string) => void;
   onChange: (item: FurnitureItemType) => void;
 }
@@ -13,6 +21,7 @@ interface FurnitureItemProps {
 export default function FurnitureItem({
   item,
   isSelected,
+  stageBounds,
   onSelect,
   onChange,
 }: FurnitureItemProps) {
@@ -25,6 +34,11 @@ export default function FurnitureItem({
       height={item.height}
       rotation={item.rotation}
       draggable
+      // Constrain dragging to within room walls
+      dragBoundFunc={(pos) => ({
+        x: Math.max(stageBounds.minX, Math.min(pos.x, stageBounds.maxX)),
+        y: Math.max(stageBounds.minY, Math.min(pos.y, stageBounds.maxY)),
+      })}
       onClick={() => onSelect(item.id)}
       onTap={() => onSelect(item.id)}
       onDragEnd={(e) => {

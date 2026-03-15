@@ -143,9 +143,13 @@ export default function StudioPage() {
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-sm text-blue-700">
-              <strong>Tip:</strong> Click furniture in the left panel to add it
-              to the canvas. Drag items to position them. Click{" "}
-              <strong>Export for AI Analysis</strong> to get Claude feedback.
+              <strong>Tip:</strong> <strong>Drag</strong> furniture from the
+              left panel onto the canvas, or <strong>click</strong> to add at
+              default position. Select an item and press{" "}
+              <kbd className="px-1 py-0.5 bg-white border border-blue-200 rounded text-blue-600 font-mono text-xs">
+                Del
+              </kbd>{" "}
+              to remove it. Then click <strong>Export for AI Analysis</strong>.
             </p>
           </div>
         </main>
