@@ -1,159 +1,141 @@
-'use client'
+import Link from "next/link";
+import { getAllPosts } from "@/lib/mdx";
+import { PostCard } from "@/components/PostCard";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
-import { useState, useCallback } from 'react'
-import dynamic from 'next/dynamic'
-import FloorPlanUpload from '@/components/FloorPlanUpload'
-import FurniturePalette from '@/components/FurniturePalette'
-import StyleTemplateSelector from '@/components/StyleTemplateSelector'
-import AnalysisSidebar from '@/components/AnalysisSidebar'
-import { FurnitureItem, StyleTemplate } from '@/types/furniture'
+const CATEGORIES = [
+  {
+    slug: "ingredients",
+    label: "Ingredients",
+    description: "What the actives in your products actually do",
+  },
+  {
+    slug: "routines",
+    label: "Routines",
+    description: "Building a routine that works for your skin",
+  },
+  {
+    slug: "conditions",
+    label: "Conditions",
+    description: "Acne, hyperpigmentation, aging, sensitivity",
+  },
+  {
+    slug: "science",
+    label: "The Science",
+    description: "How skin biology and formulation chemistry work",
+  },
+];
 
-// Dynamic import to avoid SSR issues with Konva
-const FurnitureCanvas = dynamic(() => import('@/components/FurnitureCanvas'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center w-[800px] h-[600px] bg-gray-800 rounded-lg border border-gray-600">
-      <div className="text-gray-400">กำลังโหลด Canvas...</div>
-    </div>
-  ),
-})
-
-export default function Home() {
-  const [furniture, setFurniture] = useState<FurnitureItem[]>([])
-  const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null)
-  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(null)
-  const [activeTab, setActiveTab] = useState<'furniture' | 'style' | 'analysis'>('furniture')
-
-  const handleFloorPlanUpload = useCallback((url: string, file: File) => {
-    setFloorPlanUrl(url)
-    setFloorPlanFile(file)
-  }, [])
-
-  const handleAddFurniture = useCallback((item: FurnitureItem) => {
-    setFurniture((prev) => [...prev, item])
-  }, [])
-
-  const handleExport = useCallback((dataUrl: string) => {
-    const link = document.createElement('a')
-    link.download = 'room-design.png'
-    link.href = dataUrl
-    link.click()
-  }, [])
+export default async function HomePage() {
+  const posts = await getAllPosts();
+  const latestPosts = posts.slice(0, 6);
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: selectedTemplate?.primary || '#0f0f1a' }}
-    >
-      {/* Header */}
-      <header
-        className="px-6 py-4 border-b border-white/10 flex items-center justify-between"
-        style={{ background: selectedTemplate?.secondary || '#1a1a2e' }}
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🏠</span>
-          <div>
-            <h1
-              className="text-xl font-bold"
-              style={{ color: selectedTemplate?.accent || '#e94560' }}
-            >
-              Phytuse
-            </h1>
-            <p className="text-xs text-gray-400">AI-Powered Furniture Layout Designer</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="px-2 py-1 bg-purple-900/50 rounded text-purple-300">Claude Vision</span>
-          <span className="px-2 py-1 bg-blue-900/50 rounded text-blue-300">react-konva</span>
-          <span className="px-2 py-1 bg-green-900/50 rounded text-green-300">Supabase</span>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <aside
-          className="w-64 border-r border-white/10 flex flex-col overflow-y-auto"
-          style={{ background: selectedTemplate?.secondary || '#16213e' }}
-        >
-          {/* Tab navigation */}
-          <div className="flex border-b border-white/10">
-            {(['furniture', 'style', 'analysis'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-xs font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'border-b-2 border-blue-400 text-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                {tab === 'furniture' ? '🛋️' : tab === 'style' ? '🎨' : '🔍'}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-4 p-4">
-            {activeTab === 'furniture' && (
-              <>
-                <FloorPlanUpload
-                  onUpload={handleFloorPlanUpload}
-                  currentUrl={floorPlanUrl}
-                />
-                <div className="border-t border-white/10" />
-                <FurniturePalette
-                  onAddFurniture={handleAddFurniture}
-                  furnitureColor={selectedTemplate?.furniture || '#e94560'}
-                />
-              </>
-            )}
-
-            {activeTab === 'style' && (
-              <StyleTemplateSelector
-                selected={selectedTemplate}
-                onSelect={setSelectedTemplate}
-              />
-            )}
-
-            {activeTab === 'analysis' && (
-              <AnalysisSidebar floorPlanFile={floorPlanFile} />
-            )}
-          </div>
-
-          {/* Furniture count */}
-          <div className="mt-auto p-4 border-t border-white/10">
-            <p className="text-xs text-gray-500 text-center">
-              เฟอร์นิเจอร์: {furniture.length} ชิ้น
-              {selectedTemplate && (
-                <span className="ml-2 text-gray-400">• {selectedTemplate.name}</span>
-              )}
+    <>
+      <Header />
+      <main>
+        {/* Hero */}
+        <section className="border-b border-border">
+          <div className="mx-auto max-w-3xl px-4 py-20 md:py-28">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-accent">
+              Privacy-first skincare
             </p>
-          </div>
-        </aside>
-
-        {/* Main Canvas Area */}
-        <div className="flex-1 flex items-start justify-center p-6 overflow-auto">
-          <div className="flex flex-col gap-4">
-            <FurnitureCanvas
-              floorPlanUrl={floorPlanUrl}
-              furniture={furniture}
-              onFurnitureChange={setFurniture}
-              selectedTemplate={selectedTemplate}
-              onCanvasExport={handleExport}
-            />
-
-            {/* Quick actions */}
-            <div className="flex items-center gap-2 justify-end">
-              <button
-                onClick={() => setFurniture([])}
-                className="text-xs px-3 py-1.5 bg-red-900/50 hover:bg-red-800/50 text-red-300 rounded transition-colors"
+            <h1 className="font-serif text-4xl font-semibold leading-tight text-fg md:text-5xl lg:text-[3.25rem]">
+              Skincare guidance built on evidence,
+              <br className="hidden md:block" /> not affiliate links.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-fg-muted">
+              Reflect breaks down the chemistry behind your routine. No
+              sponsored content, no hype — just honest analysis grounded in
+              peer-reviewed research.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href="/posts"
+                className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
               >
-                ล้างทั้งหมด
-              </button>
+                Read the research
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm text-fg-muted transition-colors hover:text-fg"
+              >
+                About Reflect →
+              </Link>
             </div>
           </div>
-        </div>
-      </div>
-    </main>
-  )
+        </section>
+
+        {/* Latest posts */}
+        {latestPosts.length > 0 && (
+          <section className="border-b border-border">
+            <div className="mx-auto max-w-5xl px-4 py-16">
+              <div className="mb-10 flex items-baseline justify-between">
+                <h2 className="font-serif text-2xl font-semibold text-fg">
+                  Latest
+                </h2>
+                <Link
+                  href="/posts"
+                  className="text-sm text-fg-muted transition-colors hover:text-fg"
+                >
+                  All posts →
+                </Link>
+              </div>
+              <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+                {latestPosts.map((post) => (
+                  <PostCard key={post.slug} post={post} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Category grid */}
+        <section className="border-b border-border">
+          <div className="mx-auto max-w-5xl px-4 py-16">
+            <h2 className="mb-10 font-serif text-2xl font-semibold text-fg">
+              Browse by topic
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {CATEGORIES.map(({ slug, label, description }) => (
+                <Link
+                  key={slug}
+                  href={`/categories/${slug}`}
+                  className="group rounded-lg border border-border bg-bg-subtle p-5 transition-colors hover:border-accent/40 hover:bg-accent/5"
+                >
+                  <h3 className="font-serif text-base font-semibold text-fg transition-colors group-hover:text-accent">
+                    {label}
+                  </h3>
+                  <p className="mt-1.5 text-sm text-fg-muted">{description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Privacy brand statement */}
+        <section>
+          <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+            <h2 className="font-serif text-2xl font-semibold text-fg md:text-3xl">
+              Your skin data stays yours.
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg leading-relaxed text-fg-muted">
+              Reflect is built on a simple premise: honest skincare advice
+              shouldn&apos;t cost you your privacy. We don&apos;t track you,
+              sell your data, or take affiliate commissions. Just evidence,
+              clearly explained.
+            </p>
+            <Link
+              href="/subscribe"
+              className="mt-8 inline-block rounded-md border border-border px-5 py-2.5 text-sm font-medium text-fg transition-colors hover:border-accent hover:text-accent"
+            >
+              Get new posts by email
+            </Link>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
 }
